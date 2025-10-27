@@ -1,0 +1,22 @@
+{
+  "coin": "BCH",
+  "signal": "macd-15min",
+  "timestamp": "20251026_213431",
+  "backtest_date": "2025-10-26T21:34:31.625107",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 8,
+    "oversold": 26,
+    "overbought": 8
+  },
+  "performance": {
+    "total_profit_usd": 7.569968003687583,
+    "total_trades": 3,
+    "winning_trades": 2,
+    "losing_trades": 1,
+    "win_rate": 66.66666666666666,
+    "avg_profit": 2.523322667895861,
+    "signals_generated": 7
+  }
+}

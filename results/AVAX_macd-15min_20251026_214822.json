@@ -1,0 +1,22 @@
+{
+  "coin": "AVAX",
+  "signal": "macd-15min",
+  "timestamp": "20251026_214822",
+  "backtest_date": "2025-10-26T21:48:22.863340",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 8,
+    "oversold": 32,
+    "overbought": 7
+  },
+  "performance": {
+    "total_profit_usd": 3.741181666990567,
+    "total_trades": 4,
+    "winning_trades": 2,
+    "losing_trades": 2,
+    "win_rate": 50.0,
+    "avg_profit": 0.9352954167476417,
+    "signals_generated": 8
+  }
+}

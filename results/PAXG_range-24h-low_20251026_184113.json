@@ -1,0 +1,22 @@
+{
+  "coin": "PAXG",
+  "signal": "range-24h-low",
+  "timestamp": "20251026_184113",
+  "backtest_date": "2025-10-26T18:41:13.957273",
+  "timerange": "72 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": -2.0,
+    "oversold": 3.0,
+    "overbought": 0
+  },
+  "performance": {
+    "total_profit_usd": 0.7539311245852721,
+    "total_trades": 1,
+    "winning_trades": 1,
+    "losing_trades": 0,
+    "win_rate": 100.0,
+    "avg_profit": 0.7539311245852721,
+    "signals_generated": 2
+  }
+}

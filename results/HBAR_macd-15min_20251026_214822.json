@@ -1,0 +1,22 @@
+{
+  "coin": "HBAR",
+  "signal": "macd-15min",
+  "timestamp": "20251026_214822",
+  "backtest_date": "2025-10-26T21:48:22.863218",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 10,
+    "oversold": 32,
+    "overbought": 11
+  },
+  "performance": {
+    "total_profit_usd": 3.973963857665608,
+    "total_trades": 2,
+    "winning_trades": 1,
+    "losing_trades": 1,
+    "win_rate": 50.0,
+    "avg_profit": 1.986981928832804,
+    "signals_generated": 5
+  }
+}

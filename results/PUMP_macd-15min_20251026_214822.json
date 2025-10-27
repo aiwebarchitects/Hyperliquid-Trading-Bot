@@ -1,0 +1,22 @@
+{
+  "coin": "PUMP",
+  "signal": "macd-15min",
+  "timestamp": "20251026_214822",
+  "backtest_date": "2025-10-26T21:48:22.863159",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 16,
+    "oversold": 32,
+    "overbought": 7
+  },
+  "performance": {
+    "total_profit_usd": 4.511818183352585,
+    "total_trades": 5,
+    "winning_trades": 2,
+    "losing_trades": 3,
+    "win_rate": 40.0,
+    "avg_profit": 0.9023636366705171,
+    "signals_generated": 10
+  }
+}

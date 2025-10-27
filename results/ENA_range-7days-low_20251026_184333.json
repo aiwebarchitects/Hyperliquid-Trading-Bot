@@ -1,0 +1,22 @@
+{
+  "coin": "ENA",
+  "signal": "range-7days-low",
+  "timestamp": "20251026_184333",
+  "backtest_date": "2025-10-26T18:43:33.160258",
+  "timerange": "7 Days",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 0.0,
+    "oversold": 3.0,
+    "overbought": 0
+  },
+  "performance": {
+    "total_profit_usd": 3.2540311527449566,
+    "total_trades": 3,
+    "winning_trades": 3,
+    "losing_trades": 0,
+    "win_rate": 100.0,
+    "avg_profit": 1.0846770509149855,
+    "signals_generated": 6
+  }
+}

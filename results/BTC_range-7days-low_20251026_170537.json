@@ -1,0 +1,22 @@
+{
+  "coin": "BTC",
+  "signal": "range-7days-low",
+  "timestamp": "20251026_170537",
+  "backtest_date": "2025-10-26T17:05:37.433717",
+  "timerange": "7 Days",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 0.0,
+    "oversold": 3.0,
+    "overbought": 0
+  },
+  "performance": {
+    "total_profit_usd": 0.7621153883924341,
+    "total_trades": 1,
+    "winning_trades": 1,
+    "losing_trades": 0,
+    "win_rate": 100.0,
+    "avg_profit": 0.7621153883924341,
+    "signals_generated": 2
+  }
+}

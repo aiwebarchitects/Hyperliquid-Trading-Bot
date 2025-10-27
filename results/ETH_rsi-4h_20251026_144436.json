@@ -1,0 +1,22 @@
+{
+  "coin": "ETH",
+  "signal": "rsi-4h",
+  "timestamp": "20251026_144436",
+  "backtest_date": "2025-10-26T14:44:36.272208",
+  "timerange": "72 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 18,
+    "oversold": 35,
+    "overbought": 68
+  },
+  "performance": {
+    "total_profit_usd": 41.53693523987274,
+    "total_trades": 15,
+    "winning_trades": 12,
+    "losing_trades": 3,
+    "win_rate": 80.0,
+    "avg_profit": 2.769129015991516,
+    "signals_generated": 362
+  }
+}

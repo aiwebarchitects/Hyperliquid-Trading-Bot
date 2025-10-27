@@ -1,0 +1,22 @@
+{
+  "coin": "XRP",
+  "signal": "macd-15min",
+  "timestamp": "20251026_214822",
+  "backtest_date": "2025-10-26T21:48:22.863806",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 8,
+    "oversold": 20,
+    "overbought": 11
+  },
+  "performance": {
+    "total_profit_usd": -0.09571032132698326,
+    "total_trades": 4,
+    "winning_trades": 1,
+    "losing_trades": 3,
+    "win_rate": 25.0,
+    "avg_profit": -0.023927580331745815,
+    "signals_generated": 8
+  }
+}

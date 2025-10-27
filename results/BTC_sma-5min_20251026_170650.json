@@ -1,0 +1,22 @@
+{
+  "coin": "BTC",
+  "signal": "sma-5min",
+  "timestamp": "20251026_170650",
+  "backtest_date": "2025-10-26T17:06:50.886291",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 15,
+    "oversold": 40,
+    "overbought": 0
+  },
+  "performance": {
+    "total_profit_usd": 3.341656962362644,
+    "total_trades": 12,
+    "winning_trades": 7,
+    "losing_trades": 5,
+    "win_rate": 58.333333333333336,
+    "avg_profit": 0.27847141353022037,
+    "signals_generated": 25
+  }
+}

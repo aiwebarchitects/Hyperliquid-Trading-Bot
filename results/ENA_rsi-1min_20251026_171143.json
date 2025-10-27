@@ -1,0 +1,22 @@
+{
+  "coin": "ENA",
+  "signal": "rsi-1min",
+  "timestamp": "20251026_171143",
+  "backtest_date": "2025-10-26T17:11:43.639914",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 10,
+    "oversold": 35,
+    "overbought": 68
+  },
+  "performance": {
+    "total_profit_usd": 3.0588714569904027,
+    "total_trades": 25,
+    "winning_trades": 20,
+    "losing_trades": 5,
+    "win_rate": 80.0,
+    "avg_profit": 0.1223548582796161,
+    "signals_generated": 408
+  }
+}

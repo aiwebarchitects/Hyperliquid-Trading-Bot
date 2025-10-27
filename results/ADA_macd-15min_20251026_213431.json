@@ -1,0 +1,22 @@
+{
+  "coin": "ADA",
+  "signal": "macd-15min",
+  "timestamp": "20251026_213431",
+  "backtest_date": "2025-10-26T21:34:31.625580",
+  "timerange": "24 Hours",
+  "position_size_usd": 100.0,
+  "best_parameters": {
+    "period": 14,
+    "oversold": 20,
+    "overbought": 10
+  },
+  "performance": {
+    "total_profit_usd": 3.4025398595297465,
+    "total_trades": 3,
+    "winning_trades": 1,
+    "losing_trades": 2,
+    "win_rate": 33.33333333333333,
+    "avg_profit": 1.1341799531765822,
+    "signals_generated": 6
+  }
+}
