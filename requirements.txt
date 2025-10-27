@@ -1,0 +1,22 @@
+# Trading Bot Requirements
+# Install with: pip install -r requirements.txt
+
+# UI Framework
+rich>=13.0.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Exchange API
+hyperliquid-python-sdk
+eth-account
+
+# Price Data
+requests>=2.31.0
+
+# Timezone Support
+pytz>=2023.3
+
+# Optional
+# python-dotenv>=1.0.0  # Environment variables
