@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
-[![GitHub](https://img.shields.io/badge/GitHub-MCMA-green)](https://github.com/aiwebarchitects/MCMA)
+[![GitHub](https://img.shields.io/badge/GitHub-Hyperliquid-Trading-Bot-green)](https://github.com/aiwebarchitects/Hyperliquid-Trading-Bot)
 
 ## Features
 
@@ -47,8 +47,8 @@
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/aiwebarchitects/MCMA.git
-cd multi_crypto_multi_algo_trading_bot_0.1
+git clone https://github.com/aiwebarchitects/Hyperliquid-Trading-Bot.git
+cd Hyperliquid-Trading-Bot
 ```
 
 2. Install dependencies:
@@ -205,7 +205,7 @@ Results are saved in `results/` directory as JSON files.
 ## Project Structure
 
 ```
-multi_crypto_multi_algo_trading_bot_0.1/
+Hyperliquid-Trading-Bot/
 ├── trading_panel.py              # Main entry point - GUI application
 ├── requirements.txt              # Python dependencies
 ├── how_to_add_new_signals.md     # Guide for adding new signals
@@ -439,8 +439,8 @@ limitations under the License.
 ## Support
 
 For issues, questions, or contributions:
-- **GitHub Repository**: https://github.com/aiwebarchitects/MCMA
-- **Issues**: https://github.com/aiwebarchitects/MCMA/issues
+- **GitHub Repository**: https://github.com/aiwebarchitects/Hyperliquid-Trading-Bot
+- **Issues**: https://github.com/aiwebarchitects/Hyperliquid-Trading-Bot/issues
 - Check existing documentation
 - Review log files for errors
 - Consult `how_to_add_new_signals.md` for customization
