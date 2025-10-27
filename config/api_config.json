@@ -1,0 +1,26 @@
+{
+    "_comment": "IMPORTANT: Before using this trading bot, please follow these steps:",
+    "_instructions": [
+        "1. Sign up for Hyperliquid here: https://app.hyperliquid.xyz/join/BONUS500",
+        "2. Create your API credentials here: https://app.hyperliquid.xyz/API",
+        "3. Make sure you fund your account with usdc before starting the trading bot",
+        "4. Add your secret_key and your new generated account_address below"
+    ],
+    "secret_key": "your-secret_key",
+    "account_address": "your-account_address",
+    "multi_sig": {
+        "authorized_users": [
+            {
+                "comment": "signer 1",
+                "secret_key": "",
+                "account_address": ""
+            },
+            {
+                "comment": "signer 2",
+                "secret_key": "",
+                "account_address": ""
+            }
+        ]
+    }
+}
+
