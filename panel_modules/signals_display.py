@@ -9,7 +9,7 @@ make this code more modular, this file has almost 1000 lines of code.
 import tkinter as tk
 from datetime import datetime
 from typing import Dict, List
-from signals import RSI5MinSignalGenerator, RSI1MinSignalGenerator, RSI1HSignalGenerator, RSI4HSignalGenerator, SMA5MinSignalGenerator, Range7DaysLowSignalGenerator, Range24HLowSignalGenerator, Scalping1MinSignalGenerator, MACD15MinSignalGenerator, SupportResistance1HSignalGenerator, BollingerBands15MinSignalGenerator
+from signals import RSI5MinSignalGenerator, RSI1MinSignalGenerator, RSI1HSignalGenerator, RSI4HSignalGenerator, SMA5MinSignalGenerator, Range7DaysLowSignalGenerator, Range24HLowSignalGenerator, Scalping1MinSignalGenerator, MACD15MinSignalGenerator, SupportResistance1HSignalGenerator, BollingerBands15MinSignalGenerator, BollingerBands30MinSignalGenerator, BollingerBands1HSignalGenerator
 from config import TRADING_SETTINGS, SIGNAL_SETTINGS
 from config.signal_settings import SIGNAL_GENERATOR_SETTINGS
 from utils.logger import get_logger
@@ -180,6 +180,28 @@ class SignalsDisplay:
                 'name': SIGNAL_GENERATOR_SETTINGS['bollinger_bands_15min']['name'],
                 'last_signals': [],
                 'update_interval': 90  # Update every 90 seconds (15min data)
+            },
+            'bollinger_bands_30min': {
+                'instance': BollingerBands30MinSignalGenerator(
+                    period=20,
+                    std_dev=2.0,
+                    touch_threshold=0.5
+                ),
+                'enabled': SIGNAL_GENERATOR_SETTINGS['bollinger_bands_30min']['enabled'],
+                'name': SIGNAL_GENERATOR_SETTINGS['bollinger_bands_30min']['name'],
+                'last_signals': [],
+                'update_interval': 120  # Update every 2 minutes (30min data)
+            },
+            'bollinger_bands_1h': {
+                'instance': BollingerBands1HSignalGenerator(
+                    period=20,
+                    std_dev=2.0,
+                    touch_threshold=0.5
+                ),
+                'enabled': SIGNAL_GENERATOR_SETTINGS['bollinger_bands_1h']['enabled'],
+                'name': SIGNAL_GENERATOR_SETTINGS['bollinger_bands_1h']['name'],
+                'last_signals': [],
+                'update_interval': 300  # Update every 5 minutes (1h data)
             }
         }
         
