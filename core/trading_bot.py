@@ -16,7 +16,10 @@ from signals import (
     Range7DaysLowSignalGenerator,
     Range24HLowSignalGenerator,
     MACD15MinSignalGenerator,
-    SupportResistance1HSignalGenerator
+    SupportResistance1HSignalGenerator,
+    BollingerBands15MinSignalGenerator,
+    BollingerBands30MinSignalGenerator,
+    BollingerBands1HSignalGenerator
 )
 from managers import OrderManager, PositionManager
 from utils.api_client import APIClient
@@ -137,6 +140,33 @@ class TradingBot:
                 min_distance_percent=2.0
             ))
             logger.info("  ✓ Support/Resistance 1-Hour signal generator enabled")
+        
+        # Bollinger Bands 15-minute (default parameters from backtesting)
+        if SIGNAL_GENERATOR_SETTINGS['bollinger_bands_15min']['enabled']:
+            generators.append(BollingerBands15MinSignalGenerator(
+                period=20, 
+                std_dev=2.0, 
+                touch_threshold=0.5
+            ))
+            logger.info("  ✓ Bollinger Bands 15-Minute signal generator enabled")
+        
+        # Bollinger Bands 30-minute (default parameters from backtesting)
+        if SIGNAL_GENERATOR_SETTINGS['bollinger_bands_30min']['enabled']:
+            generators.append(BollingerBands30MinSignalGenerator(
+                period=20, 
+                std_dev=2.0, 
+                touch_threshold=0.5
+            ))
+            logger.info("  ✓ Bollinger Bands 30-Minute signal generator enabled")
+        
+        # Bollinger Bands 1-hour (default parameters from backtesting)
+        if SIGNAL_GENERATOR_SETTINGS['bollinger_bands_1h']['enabled']:
+            generators.append(BollingerBands1HSignalGenerator(
+                period=20, 
+                std_dev=2.0, 
+                touch_threshold=0.5
+            ))
+            logger.info("  ✓ Bollinger Bands 1-Hour signal generator enabled")
         
         if not generators:
             logger.warning("  ⚠️  No signal generators enabled! Check config/signal_settings.py")
