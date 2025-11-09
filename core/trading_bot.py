@@ -15,7 +15,8 @@ from signals import (
     SMA5MinSignalGenerator,
     Range7DaysLowSignalGenerator,
     Range24HLowSignalGenerator,
-    MACD15MinSignalGenerator
+    MACD15MinSignalGenerator,
+    SupportResistance1HSignalGenerator
 )
 from managers import OrderManager, PositionManager
 from utils.api_client import APIClient
@@ -127,6 +128,16 @@ class TradingBot:
             generators.append(MACD15MinSignalGenerator(fast=12, slow=26, signal=9))
             logger.info("  ✓ MACD 15-Minute signal generator enabled")
         
+        # Support and Resistance 1-hour (default parameters from backtesting)
+        if SIGNAL_GENERATOR_SETTINGS['support_resistance_1h']['enabled']:
+            generators.append(SupportResistance1HSignalGenerator(
+                lookback_periods=100, 
+                min_touches=3, 
+                tolerance_percent=1.0, 
+                min_distance_percent=2.0
+            ))
+            logger.info("  ✓ Support/Resistance 1-Hour signal generator enabled")
+        
         if not generators:
             logger.warning("  ⚠️  No signal generators enabled! Check config/signal_settings.py")
         
@@ -192,6 +203,8 @@ class TradingBot:
         base_interval = 60  # Check every minute
         
         logger.info(f"Signal loop started (base interval={base_interval}s)")
+        logger.info("Smart timeframe-based checking enabled")
+        
         logger.info("Smart timeframe-based checking enabled")
         
         while self.running:
