@@ -10,7 +10,7 @@ SIGNAL_GENERATOR_SETTINGS = {
         'name': 'RSI 5-Minute'
     },
     'rsi_1min': {
-        'enabled': True,
+        'enabled': False,
         'name': 'RSI 1-Minute'
     },
     'rsi_1h': {
@@ -22,7 +22,7 @@ SIGNAL_GENERATOR_SETTINGS = {
         'name': 'RSI 4-Hour'
     },
     'sma_5min': {
-        'enabled': True,
+        'enabled': False,
         'name': 'SMA 5-Minute'
     },
     'range_7days_low': {
@@ -34,11 +34,15 @@ SIGNAL_GENERATOR_SETTINGS = {
         'name': '24H Low Range'
     },
     'scalping_1min': {
-        'enabled': True,
+        'enabled': False,
         'name': 'Scalping 1-Minute'
     },
     'macd_15min': {
         'enabled': False,
         'name': 'MACD 15-Minute'
+    },
+    'support_resistance_1h': {
+        'enabled': True,
+        'name': 'Support/Resistance 1H'
     },
 }

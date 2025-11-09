@@ -5,20 +5,20 @@ Based on DEV_PLAN.md requirements only.
 
 TRADING_SETTINGS = {
     # Position Management (from DEV_PLAN)
-    'max_positions': 10,              # Maximum concurrent positions
-    'position_size_usd': 20,         # Default position size
+    'max_positions': 2,              # Maximum concurrent positions
+    'position_size_usd': 50,         # Default position size
     
     # Risk Management (from DEV_PLAN)
     'stop_loss_percent': 2.20,         # Stop loss percentage (FIXED - never trails)
-    'take_profit_percent': 10.12,       # Take profit percentage fixed profit doesnt make sense.
-    'trailing_stop_percent': 0.20,     # Trailing stop distance from peak is not integrated
-    'trailing_stop_activation': 0.30,  # Profit % to activate trailing stop is not integrated
+    'take_profit_percent': 0.42,       # Take profit percentage fixed profit doesnt make sense.
+    'trailing_stop_percent': 0.20,     # Trailing stop distance from peak  is deactived
+    'trailing_stop_activation': 0.30,  # Profit % to activate trailing stop not working. on monitor it always says inactive.
     'min_profit_to_sell': 0.03,       # Minimum profit to consider selling
     'min_signal_strength': 0.75,       # Minimum signal strength to execute (0.0-1.0)
     
     # Market Data (from DEV_PLAN)
     'timeframe': '5m',                # Default timeframe
-    'monitored_coins': ['ZEC', 'ZEN', 'ENA', 'BTC'],              # Coins to trade
+    'monitored_coins': ['PAXG', 'BTC'],              # Coins to trade
     
     # Exchange (from DEV_PLAN)
     'exchange': 'hyperliquid',

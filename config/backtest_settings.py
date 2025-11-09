@@ -78,6 +78,15 @@ BACKTEST_SETTINGS = {
         'interval': '15m',
     },
     
+    # Optimization Ranges for Support/Resistance 1h
+    'support_resistance_1h_optimization': {
+        'lookback_periods': [50, 75, 100, 125, 150],      # Lookback periods to test
+        'min_touches': [2, 3, 4, 5],                      # Minimum touches to validate S/R level
+        'tolerance_percent': [0.5, 1.0, 1.5, 2.0],        # Price tolerance for S/R detection
+        'min_distance_percent': [1.0, 1.5, 2.0, 2.5, 3.0], # Minimum distance between levels
+        'interval': '1h',
+    },
+    
     # Time Ranges
     'time_ranges': {
         '24 Hours': 1440,   # minutes
