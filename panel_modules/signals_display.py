@@ -9,7 +9,7 @@ make this code more modular, this file has almost 1000 lines of code.
 import tkinter as tk
 from datetime import datetime
 from typing import Dict, List
-from signals import RSI5MinSignalGenerator, RSI1MinSignalGenerator, RSI1HSignalGenerator, RSI4HSignalGenerator, SMA5MinSignalGenerator, Range7DaysLowSignalGenerator, Range24HLowSignalGenerator, Scalping1MinSignalGenerator, MACD15MinSignalGenerator, SupportResistance1HSignalGenerator
+from signals import RSI5MinSignalGenerator, RSI1MinSignalGenerator, RSI1HSignalGenerator, RSI4HSignalGenerator, SMA5MinSignalGenerator, Range7DaysLowSignalGenerator, Range24HLowSignalGenerator, Scalping1MinSignalGenerator, MACD15MinSignalGenerator, SupportResistance1HSignalGenerator, BollingerBands15MinSignalGenerator
 from config import TRADING_SETTINGS, SIGNAL_SETTINGS
 from config.signal_settings import SIGNAL_GENERATOR_SETTINGS
 from utils.logger import get_logger
@@ -169,6 +169,17 @@ class SignalsDisplay:
                 'name': SIGNAL_GENERATOR_SETTINGS['support_resistance_1h']['name'],
                 'last_signals': [],
                 'update_interval': 300  # Update every 5 minutes (1h data doesn't change often)
+            },
+            'bollinger_bands_15min': {
+                'instance': BollingerBands15MinSignalGenerator(
+                    period=20,
+                    std_dev=2.0,
+                    touch_threshold=0.5
+                ),
+                'enabled': SIGNAL_GENERATOR_SETTINGS['bollinger_bands_15min']['enabled'],
+                'name': SIGNAL_GENERATOR_SETTINGS['bollinger_bands_15min']['name'],
+                'last_signals': [],
+                'update_interval': 90  # Update every 90 seconds (15min data)
             }
         }
         
@@ -600,6 +611,14 @@ class SignalsDisplay:
                     metadata_text += f" | Resistance: ${resistance:.6f}"
                 if support:
                     metadata_text += f" | Support: ${support:.6f}"
+            elif 'upper_band' in signal.metadata and 'lower_band' in signal.metadata:
+                # Bollinger Bands signal
+                price = signal.metadata.get('current_price', 0)
+                upper = signal.metadata.get('upper_band', 0)
+                lower = signal.metadata.get('lower_band', 0)
+                bb_pos = signal.metadata.get('bb_position', 0)
+                bandwidth = signal.metadata.get('bandwidth', 0)
+                metadata_text = f"Price: ${price:.6f} | Bands: ${lower:.6f}-${upper:.6f} | Pos: {bb_pos:.2f} | BW: {bandwidth:.2f}%"
             
             metadata_text += f" ({duration:.1f}s)"
             labels['metadata'].config(text=metadata_text)
@@ -713,6 +732,13 @@ class SignalsDisplay:
                     metadata_str += f" R=${resistance:.6f}"
                 if support:
                     metadata_str += f" S=${support:.6f}"
+            elif 'upper_band' in signal.metadata and 'lower_band' in signal.metadata:
+                # Bollinger Bands signal
+                price = signal.metadata.get('current_price', 0)
+                upper = signal.metadata.get('upper_band', 0)
+                lower = signal.metadata.get('lower_band', 0)
+                bb_pos = signal.metadata.get('bb_position', 0)
+                metadata_str = f"Price=${price:.6f} Bands=${lower:.6f}-${upper:.6f} Pos={bb_pos:.2f}"
             
             # Create log entry with duration
             log_entry = f"[{timestamp}] {coin:6} | {generator_name:15} | {signal.action:4} | Strength={signal.strength:.2f} | {metadata_str} | Duration={duration:.2f}s\n"

@@ -5,7 +5,7 @@ import pandas as pd
 from typing import Optional, Dict, List
 from .backtest_indicators import (
     calculate_rsi, calculate_sma, calculate_ema, 
-    calculate_macd, calculate_volume_spike
+    calculate_macd, calculate_volume_spike, calculate_bollinger_bands
 )
 from .backtest_simulator import simulate_trades, calculate_trade_statistics
 
@@ -367,4 +367,88 @@ def run_macd_backtest(df: pd.DataFrame, coin: str, fast: int,
         
     except Exception as e:
         print(f"Error in MACD backtest: {e}")
+        return None
+
+
+def run_bollinger_bands_backtest(df: pd.DataFrame, coin: str, period: int,
+                                 std_dev: float, touch_threshold: float,
+                                 position_size: float) -> Optional[Dict]:
+    """
+    Run Bollinger Bands strategy backtest
+    
+    Args:
+        df: DataFrame with OHLCV data
+        coin: Coin symbol
+        period: BB period (SMA)
+        std_dev: Standard deviation multiplier
+        touch_threshold: Band touch threshold (%)
+        position_size: Position size in USD
+        
+    Returns:
+        Dictionary with backtest results or None
+    """
+    try:
+        df_copy = df.copy()
+        
+        middle_band, upper_band, lower_band = calculate_bollinger_bands(
+            df_copy['close'], period, std_dev
+        )
+        
+        # Generate signals
+        signals = []
+        for i in range(len(df_copy)):
+            if pd.isna(upper_band.iloc[i]) or pd.isna(lower_band.iloc[i]):
+                continue
+            
+            current_price = df_copy.iloc[i]['close']
+            upper = upper_band.iloc[i]
+            lower = lower_band.iloc[i]
+            middle = middle_band.iloc[i]
+            
+            # Calculate BB position (0 to 1)
+            if upper != lower:
+                bb_position = (current_price - lower) / (upper - lower)
+            else:
+                bb_position = 0.5
+            
+            # Calculate distance to bands
+            distance_to_lower = abs(current_price - lower) / lower * 100
+            distance_to_upper = abs(upper - current_price) / upper * 100
+            
+            # BUY signal: Price near or below lower band
+            if bb_position <= 0.2 or distance_to_lower <= touch_threshold:
+                signals.append({
+                    'timestamp': df_copy.iloc[i]['timestamp'],
+                    'price': current_price,
+                    'rsi': 0,
+                    'action': 'BUY'
+                })
+            
+            # SELL signal: Price near or above upper band
+            elif bb_position >= 0.8 or distance_to_upper <= touch_threshold:
+                signals.append({
+                    'timestamp': df_copy.iloc[i]['timestamp'],
+                    'price': current_price,
+                    'rsi': 0,
+                    'action': 'SELL'
+                })
+        
+        # Simulate trades
+        trades = simulate_trades(signals, position_size)
+        stats = calculate_trade_statistics(trades)
+        
+        if not stats:
+            return None
+        
+        return {
+            'coin': coin,
+            'period': period,
+            'oversold': std_dev,
+            'overbought': touch_threshold,
+            'signals_generated': len(signals),
+            **stats
+        }
+        
+    except Exception as e:
+        print(f"Error in Bollinger Bands backtest: {e}")
         return None

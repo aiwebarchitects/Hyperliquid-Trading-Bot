@@ -89,3 +89,23 @@ def calculate_volume_spike(volume: pd.Series, multiplier: float, window: int = 2
     """
     avg_volume = volume.rolling(window=window).mean()
     return volume > (avg_volume * multiplier)
+
+
+def calculate_bollinger_bands(prices: pd.Series, period: int, std_dev: float) -> tuple:
+    """
+    Calculate Bollinger Bands
+    
+    Args:
+        prices: Series of prices
+        period: Period for SMA calculation
+        std_dev: Number of standard deviations for bands
+        
+    Returns:
+        Tuple of (middle_band, upper_band, lower_band)
+    """
+    middle_band = prices.rolling(window=period).mean()
+    std = prices.rolling(window=period).std()
+    upper_band = middle_band + (std * std_dev)
+    lower_band = middle_band - (std * std_dev)
+    
+    return middle_band, upper_band, lower_band
