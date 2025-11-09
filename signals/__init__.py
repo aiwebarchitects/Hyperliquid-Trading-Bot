@@ -12,6 +12,7 @@ from .range_24h_low import Range24HLowSignalGenerator
 from .range_7days_low import Range7DaysLowSignalGenerator
 from .scalping_1min import Scalping1MinSignalGenerator
 from .macd_15min import MACD15MinSignalGenerator
+from .support_resistance_1h import SupportResistance1HSignalGenerator
 
 __all__ = [
     'RSI5MinSignalGenerator',
@@ -22,5 +23,6 @@ __all__ = [
     'Range24HLowSignalGenerator',
     'Range7DaysLowSignalGenerator',
     'Scalping1MinSignalGenerator',
-    'MACD15MinSignalGenerator'
+    'MACD15MinSignalGenerator',
+    'SupportResistance1HSignalGenerator'
 ]
