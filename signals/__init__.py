@@ -13,6 +13,9 @@ from .range_7days_low import Range7DaysLowSignalGenerator
 from .scalping_1min import Scalping1MinSignalGenerator
 from .macd_15min import MACD15MinSignalGenerator
 from .support_resistance_1h import SupportResistance1HSignalGenerator
+from .bollinger_bands_15min import BollingerBands15MinSignalGenerator
+from .bollinger_bands_30min import BollingerBands30MinSignalGenerator
+from .bollinger_bands_1h import BollingerBands1HSignalGenerator
 
 __all__ = [
     'RSI5MinSignalGenerator',
@@ -24,5 +27,8 @@ __all__ = [
     'Range7DaysLowSignalGenerator',
     'Scalping1MinSignalGenerator',
     'MACD15MinSignalGenerator',
-    'SupportResistance1HSignalGenerator'
+    'SupportResistance1HSignalGenerator',
+    'BollingerBands15MinSignalGenerator',
+    'BollingerBands30MinSignalGenerator',
+    'BollingerBands1HSignalGenerator'
 ]
