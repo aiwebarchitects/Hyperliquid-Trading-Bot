@@ -118,7 +118,8 @@ class BacktestPage:
         self.signal_var = tk.StringVar(value="RSI 1min")
         signal_dropdown = ttk.Combobox(signal_frame, textvariable=self.signal_var,
                                       values=["RSI 1min", "RSI 5min", "RSI 1h", "RSI 4h", "SMA 5min", 
-                                             "Range 24h Low", "Range 7days Low", "Scalping 1min", "MACD 15min"],
+                                             "Range 24h Low", "Range 7days Low", "Scalping 1min", "MACD 15min",
+                                             "Support/Resistance 1H"],
                                       state='readonly', font=('Courier', 10))
         signal_dropdown.pack(fill=tk.X, pady=5)
         signal_dropdown.bind('<<ComboboxSelected>>', self._on_signal_changed)
@@ -218,7 +219,8 @@ class BacktestPage:
             "Range 24h Low": "range_24h_low_optimization",
             "Range 7days Low": "range_7days_low_optimization",
             "Scalping 1min": "scalping_1min_optimization",
-            "MACD 15min": "macd_15min_optimization"
+            "MACD 15min": "macd_15min_optimization",
+            "Support/Resistance 1H": "support_resistance_1h_optimization"
         }
         
         config_key = signal_map.get(signal, "rsi_1min_optimization")
