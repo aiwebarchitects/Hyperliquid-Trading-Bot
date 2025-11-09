@@ -18,7 +18,7 @@ TRADING_SETTINGS = {
     
     # Market Data (from DEV_PLAN)
     'timeframe': '5m',                # Default timeframe
-    'monitored_coins': ['PAXG', 'BTC'],              # Coins to trade
+    'monitored_coins': ['BTC', 'ETH', 'ADA', 'SOL', 'XRP', 'ZEC', 'ZEN', 'BNB', 'PEPE', 'AVAX'],              # Coins to trade
     
     # Exchange (from DEV_PLAN)
     'exchange': 'hyperliquid',

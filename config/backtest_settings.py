@@ -87,6 +87,30 @@ BACKTEST_SETTINGS = {
         'interval': '1h',
     },
     
+    # Optimization Ranges for Bollinger Bands 15min
+    'bollinger_bands_15min_optimization': {
+        'period': [15, 20, 25, 30],                       # BB period (SMA) to test
+        'std_dev': [1.5, 2.0, 2.5, 3.0],                  # Standard deviation multiplier
+        'touch_threshold': [0.3, 0.5, 0.8, 1.0],          # Band touch threshold in percent
+        'interval': '15m',
+    },
+    
+    # Optimization Ranges for Bollinger Bands 30min
+    'bollinger_bands_30min_optimization': {
+        'period': [15, 20, 25, 30],                       # BB period (SMA) to test
+        'std_dev': [1.5, 2.0, 2.5, 3.0],                  # Standard deviation multiplier
+        'touch_threshold': [0.3, 0.5, 0.8, 1.0],          # Band touch threshold in percent
+        'interval': '30m',
+    },
+    
+    # Optimization Ranges for Bollinger Bands 1h
+    'bollinger_bands_1h_optimization': {
+        'period': [15, 20, 25, 30],                       # BB period (SMA) to test
+        'std_dev': [1.5, 2.0, 2.5, 3.0],                  # Standard deviation multiplier
+        'touch_threshold': [0.3, 0.5, 0.8, 1.0],          # Band touch threshold in percent
+        'interval': '1h',
+    },
+    
     # Time Ranges
     'time_ranges': {
         '24 Hours': 1440,   # minutes

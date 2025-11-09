@@ -45,4 +45,16 @@ SIGNAL_GENERATOR_SETTINGS = {
         'enabled': True,
         'name': 'Support/Resistance 1H'
     },
+    'bollinger_bands_15min': {
+        'enabled': True,
+        'name': 'Bollinger Bands 15min'
+    },
+    'bollinger_bands_30min': {
+        'enabled': True,
+        'name': 'Bollinger Bands 30min'
+    },
+    'bollinger_bands_1h': {
+        'enabled': True,
+        'name': 'Bollinger Bands 1h'
+    },
 }
