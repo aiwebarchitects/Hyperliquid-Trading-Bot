@@ -1,18 +1,25 @@
 """
 Self-optimizing backtest page for testing trading signals with historical data
+Refactored for modularity - uses helper modules for cleaner code organization
 """
 import tkinter as tk
 from tkinter import ttk
-import requests
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List
 import threading
 import itertools
-import json
-import os
 from config import TRADING_SETTINGS, BACKTEST_SETTINGS
+
+# Import modular components
+from panel_modules.backtest_data_fetcher import fetch_historical_data
+from panel_modules.backtest_strategies import (
+    run_rsi_backtest, run_sma_backtest, run_range_backtest,
+    run_scalping_backtest, run_macd_backtest
+)
+from panel_modules.backtest_results import save_best_results, group_best_results_by_coin
+from panel_modules.backtest_ui_components import (
+    create_result_row, create_results_header, create_best_overall_highlight
+)
 
 
 class BacktestPage:
@@ -167,7 +174,7 @@ class BacktestPage:
         
         # Coin checkboxes
         for coin in self.coins:
-            var = tk.BooleanVar(value=True)  # All enabled by default
+            var = tk.BooleanVar(value=True)
             self.coin_vars[coin] = var
             cb = tk.Checkbutton(coins_frame, text=coin, variable=var,
                                bg=self.colors['bg_panel'], fg=self.colors['white'],
@@ -182,7 +189,7 @@ class BacktestPage:
         tk.Label(opt_frame, text="Optimization Parameters:", bg=self.colors['bg_panel'],
                 fg=self.colors['white'], font=('Courier', 10, 'bold')).pack(anchor='w', pady=(10, 5))
         
-        # Optimization info labels (will be updated dynamically)
+        # Optimization info labels
         self.opt_periods_label = tk.Label(opt_frame, text="", bg=self.colors['bg_panel'],
                 fg=self.colors['gray'], font=('Courier', 8))
         self.opt_periods_label.pack(anchor='w', pady=1)
@@ -234,25 +241,29 @@ class BacktestPage:
         # Update current interval
         self.current_interval = self.optimization_ranges.get('interval', '1m')
         
-        # Update optimization info labels based on signal type
+        # Update optimization info labels
+        self._update_optimization_labels(signal)
+    
+    def _update_optimization_labels(self, signal: str):
+        """Update optimization parameter labels based on signal type"""
         if signal == "SMA 5min":
             short_periods = self.optimization_ranges.get('short_period', [5, 8, 10, 12, 15])
             long_periods = self.optimization_ranges.get('long_period', [20, 25, 30, 35, 40])
-            total_combinations = len(short_periods) * len(long_periods)
+            total = len(short_periods) * len(long_periods)
             
             self.opt_periods_label.config(text=f"Short SMA Periods: {short_periods}")
             self.opt_oversold_label.config(text=f"Long SMA Periods: {long_periods}")
             self.opt_overbought_label.config(text="")
-            self.opt_total_label.config(text=f"Total: {total_combinations} combinations")
+            self.opt_total_label.config(text=f"Total: {total} combinations")
         elif signal in ["Range 24h Low", "Range 7days Low"]:
             long_offsets = self.optimization_ranges.get('long_offset', [-2.0, -1.5, -1.0, -0.5, 0.0])
             tolerances = self.optimization_ranges.get('tolerance', [1.0, 1.5, 2.0, 2.5, 3.0])
-            total_combinations = len(long_offsets) * len(tolerances)
+            total = len(long_offsets) * len(tolerances)
             
             self.opt_periods_label.config(text=f"Long Offset %: {long_offsets}")
             self.opt_oversold_label.config(text=f"Tolerance %: {tolerances}")
             self.opt_overbought_label.config(text="")
-            self.opt_total_label.config(text=f"Total: {total_combinations} combinations")
+            self.opt_total_label.config(text=f"Total: {total} combinations")
         elif signal == "Scalping 1min":
             fast_emas = self.optimization_ranges.get('fast_ema', [3, 5, 8])
             slow_emas = self.optimization_ranges.get('slow_ema', [10, 13, 15, 20])
@@ -260,33 +271,33 @@ class BacktestPage:
             rsi_oversold = self.optimization_ranges.get('rsi_oversold', [25, 30, 35])
             rsi_overbought = self.optimization_ranges.get('rsi_overbought', [65, 70, 75])
             vol_mults = self.optimization_ranges.get('volume_multiplier', [1.3, 1.5, 1.8, 2.0])
-            total_combinations = len(fast_emas) * len(slow_emas) * len(rsi_periods) * len(rsi_oversold) * len(rsi_overbought) * len(vol_mults)
+            total = len(fast_emas) * len(slow_emas) * len(rsi_periods) * len(rsi_oversold) * len(rsi_overbought) * len(vol_mults)
             
             self.opt_periods_label.config(text=f"Fast EMA: {fast_emas} | Slow EMA: {slow_emas}")
             self.opt_oversold_label.config(text=f"RSI Period: {rsi_periods} | Vol Mult: {vol_mults}")
             self.opt_overbought_label.config(text=f"RSI OS/OB: {rsi_oversold}/{rsi_overbought}")
-            self.opt_total_label.config(text=f"Total: {total_combinations} combinations")
+            self.opt_total_label.config(text=f"Total: {total} combinations")
         elif signal == "MACD 15min":
             fast_periods = self.optimization_ranges.get('fast', [8, 10, 12, 14, 16])
             slow_periods = self.optimization_ranges.get('slow', [20, 23, 26, 29, 32])
             signal_periods = self.optimization_ranges.get('signal', [7, 8, 9, 10, 11])
-            total_combinations = len(fast_periods) * len(slow_periods) * len(signal_periods)
+            total = len(fast_periods) * len(slow_periods) * len(signal_periods)
             
             self.opt_periods_label.config(text=f"Fast EMA: {fast_periods}")
             self.opt_oversold_label.config(text=f"Slow EMA: {slow_periods}")
             self.opt_overbought_label.config(text=f"Signal Line: {signal_periods}")
-            self.opt_total_label.config(text=f"Total: {total_combinations} combinations")
+            self.opt_total_label.config(text=f"Total: {total} combinations")
         else:
             # RSI signals
             periods = self.optimization_ranges.get('period', [10, 12, 14, 16, 18, 20])
             oversold = self.optimization_ranges.get('oversold', [25, 28, 30, 32, 35])
             overbought = self.optimization_ranges.get('overbought', [65, 68, 70, 72, 75])
-            total_combinations = len(periods) * len(oversold) * len(overbought)
+            total = len(periods) * len(oversold) * len(overbought)
             
             self.opt_periods_label.config(text=f"RSI Periods: {periods}")
             self.opt_oversold_label.config(text=f"Oversold: {oversold}")
             self.opt_overbought_label.config(text=f"Overbought: {overbought}")
-            self.opt_total_label.config(text=f"Total: {total_combinations} combinations")
+            self.opt_total_label.config(text=f"Total: {total} combinations")
     
     def _select_all_coins(self):
         """Select all coins"""
@@ -355,142 +366,17 @@ class BacktestPage:
             position_size = float(self.position_size_var.get())
             signal_type = self.signal_var.get()
             
-            # Generate combinations based on signal type
-            if signal_type == "SMA 5min":
-                short_periods = self.optimization_ranges.get('short_period', [5, 8, 10, 12, 15])
-                long_periods = self.optimization_ranges.get('long_period', [20, 25, 30, 35, 40])
-                combinations = list(itertools.product(short_periods, long_periods))
-            elif signal_type in ["Range 24h Low", "Range 7days Low"]:
-                long_offsets = self.optimization_ranges.get('long_offset', [-2.0, -1.5, -1.0, -0.5, 0.0])
-                tolerances = self.optimization_ranges.get('tolerance', [1.0, 1.5, 2.0, 2.5, 3.0])
-                combinations = list(itertools.product(long_offsets, tolerances))
-            elif signal_type == "Scalping 1min":
-                fast_emas = self.optimization_ranges.get('fast_ema', [3, 5, 8])
-                slow_emas = self.optimization_ranges.get('slow_ema', [10, 13, 15, 20])
-                rsi_periods = self.optimization_ranges.get('rsi_period', [5, 7, 9])
-                rsi_oversold = self.optimization_ranges.get('rsi_oversold', [25, 30, 35])
-                rsi_overbought = self.optimization_ranges.get('rsi_overbought', [65, 70, 75])
-                vol_mults = self.optimization_ranges.get('volume_multiplier', [1.3, 1.5, 1.8, 2.0])
-                combinations = list(itertools.product(fast_emas, slow_emas, rsi_periods, 
-                                                     rsi_oversold, rsi_overbought, vol_mults))
-            elif signal_type == "MACD 15min":
-                fast_periods = self.optimization_ranges.get('fast', [8, 10, 12, 14, 16])
-                slow_periods = self.optimization_ranges.get('slow', [20, 23, 26, 29, 32])
-                signal_periods = self.optimization_ranges.get('signal', [7, 8, 9, 10, 11])
-                combinations = list(itertools.product(fast_periods, slow_periods, signal_periods))
-            else:
-                # RSI signals
-                periods = self.optimization_ranges.get('period', [10, 12, 14, 16, 18, 20])
-                oversold_values = self.optimization_ranges.get('oversold', [25, 28, 30, 32, 35])
-                overbought_values = self.optimization_ranges.get('overbought', [65, 68, 70, 72, 75])
-                combinations = list(itertools.product(periods, oversold_values, overbought_values))
+            # Generate combinations and run tests
+            all_results = self._run_all_tests(selected_coins, signal_type, minutes, position_size)
             
-            total_tests = len(selected_coins) * len(combinations)
-            
-            self.parent.after(0, lambda: self.status_label.config(
-                text=f"Testing {total_tests} configurations..."))
-            
-            # Store all results
-            all_results = []
-            test_count = 0
-            
-            # Test each coin
-            for coin in selected_coins:
-                # Fetch historical data once per coin
-                self.parent.after(0, lambda c=coin: self.status_label.config(
-                    text=f"Fetching data for {c}..."))
-                
-                df = self._fetch_historical_data(coin, minutes)
-                
-                # Check if we have enough data based on signal type
-                if signal_type == "SMA 5min":
-                    max_period = max(self.optimization_ranges.get('long_period', [40]))
-                elif signal_type in ["Range 24h Low", "Range 7days Low"]:
-                    max_period = 50  # Range signals don't need much historical data
-                else:
-                    max_period = max(self.optimization_ranges.get('period', [20]))
-                
-                if df is None or len(df) < max_period + 1:
-                    continue
-                
-                # Test all parameter combinations for this coin
-                if signal_type == "SMA 5min":
-                    for short_period, long_period in combinations:
-                        test_count += 1
-                        
-                        self.parent.after(0, lambda tc=test_count, tt=total_tests: self.status_label.config(
-                            text=f"Testing {tc}/{tt} configurations..."))
-                        
-                        # Run SMA backtest
-                        result = self._run_sma_backtest(
-                            df, coin, short_period, long_period, position_size
-                        )
-                        
-                        if result:
-                            all_results.append(result)
-                elif signal_type in ["Range 24h Low", "Range 7days Low"]:
-                    for long_offset, tolerance in combinations:
-                        test_count += 1
-                        
-                        self.parent.after(0, lambda tc=test_count, tt=total_tests: self.status_label.config(
-                            text=f"Testing {tc}/{tt} configurations..."))
-                        
-                        # Run range backtest
-                        result = self._run_range_backtest(
-                            df, coin, long_offset, tolerance, position_size
-                        )
-                        
-                        if result:
-                            all_results.append(result)
-                elif signal_type == "Scalping 1min":
-                    for fast_ema, slow_ema, rsi_period, rsi_os, rsi_ob, vol_mult in combinations:
-                        test_count += 1
-                        
-                        self.parent.after(0, lambda tc=test_count, tt=total_tests: self.status_label.config(
-                            text=f"Testing {tc}/{tt} configurations..."))
-                        
-                        # Run scalping backtest
-                        result = self._run_scalping_backtest(
-                            df, coin, fast_ema, slow_ema, rsi_period, rsi_os, rsi_ob, vol_mult, position_size
-                        )
-                        
-                        if result:
-                            all_results.append(result)
-                elif signal_type == "MACD 15min":
-                    for fast, slow, signal_period in combinations:
-                        test_count += 1
-                        
-                        self.parent.after(0, lambda tc=test_count, tt=total_tests: self.status_label.config(
-                            text=f"Testing {tc}/{tt} configurations..."))
-                        
-                        # Run MACD backtest
-                        result = self._run_macd_backtest(
-                            df, coin, fast, slow, signal_period, position_size
-                        )
-                        
-                        if result:
-                            all_results.append(result)
-                else:
-                    # RSI signals
-                    for period, oversold, overbought in combinations:
-                        test_count += 1
-                        
-                        self.parent.after(0, lambda tc=test_count, tt=total_tests: self.status_label.config(
-                            text=f"Testing {tc}/{tt} configurations..."))
-                        
-                        # Run backtest with these parameters
-                        result = self._run_single_backtest(
-                            df, coin, period, oversold, overbought, position_size
-                        )
-                        
-                        if result:
-                            all_results.append(result)
-            
-            # Sort by total profit (descending)
+            # Sort by total profit
             all_results.sort(key=lambda x: x['total_profit_usd'], reverse=True)
             
-            # Save best results for each coin
-            self._save_best_results(all_results, timerange_name, position_size)
+            # Get signal name for saving
+            signal_name = self._get_signal_filename(signal_type)
+            
+            # Save best results
+            save_best_results(all_results, signal_name, timerange_name, position_size)
             
             # Display results
             self.parent.after(0, lambda: self._display_optimization_results(
@@ -510,547 +396,107 @@ class BacktestPage:
             self.running_backtest = False
             self.parent.after(0, lambda: self.run_btn.config(state='normal', text="RUN OPTIMIZATION"))
     
-    def _run_single_backtest(self, df: pd.DataFrame, coin: str, period: int, 
-                            oversold: int, overbought: int, position_size: float) -> Optional[Dict]:
-        """Run a single backtest with specific parameters"""
-        try:
-            # Calculate RSI
-            df_copy = df.copy()
-            df_copy['rsi'] = self._calculate_rsi(df_copy['close'], period)
-            
-            # Generate signals
-            signals = []
-            for i in range(len(df_copy)):
-                if pd.isna(df_copy.iloc[i]['rsi']):
-                    continue
-                
-                rsi = df_copy.iloc[i]['rsi']
-                if rsi <= oversold:
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': rsi,
-                        'action': 'BUY'
-                    })
-                elif rsi >= overbought:
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': rsi,
-                        'action': 'SELL'
-                    })
-            
-            # Simulate trades
-            trades = self._simulate_trades(signals, position_size)
-            
-            if not trades:
-                return None
-            
-            # Calculate statistics
-            winning_trades = [t for t in trades if t['profit_usd'] > 0]
-            losing_trades = [t for t in trades if t['profit_usd'] <= 0]
-            
-            total_profit = sum(t['profit_usd'] for t in trades)
-            win_rate = (len(winning_trades) / len(trades)) * 100 if trades else 0
-            
-            return {
-                'coin': coin,
-                'period': period,
-                'oversold': oversold,
-                'overbought': overbought,
-                'total_trades': len(trades),
-                'winning_trades': len(winning_trades),
-                'losing_trades': len(losing_trades),
-                'win_rate': win_rate,
-                'total_profit_usd': total_profit,
-                'avg_profit': total_profit / len(trades) if trades else 0,
-                'signals_generated': len(signals)
-            }
-            
-        except Exception as e:
-            print(f"Error in single backtest: {e}")
-            return None
-    
-    def _fetch_historical_data(self, coin: str, minutes: int) -> Optional[pd.DataFrame]:
-        """Fetch historical candles from Binance"""
-        try:
-            symbol = f"{coin}USDT"
-            url = "https://api.binance.com/api/v3/klines"
-            
-            # Calculate how many candles we need based on interval and time range
-            interval_minutes = {
-                '1m': 1,
-                '5m': 5,
-                '15m': 15,
-                '1h': 60,
-                '4h': 240,
-                '1d': 1440
-            }
-            
-            candles_needed = minutes // interval_minutes.get(self.current_interval, 1)
-            limit = min(candles_needed, 1000)  # Binance max is 1000
-            
-            # Calculate start time based on time range
-            end_time = int(datetime.now().timestamp() * 1000)
-            start_time = end_time - (minutes * 60 * 1000)
-            
-            params = {
-                'symbol': symbol,
-                'interval': self.current_interval,
-                'startTime': start_time,
-                'endTime': end_time,
-                'limit': limit
-            }
-            
-            response = requests.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            
-            df = pd.DataFrame(data, columns=[
-                'timestamp', 'open', 'high', 'low', 'close', 'volume',
-                'close_time', 'quote_volume', 'trades', 'taker_buy_base',
-                'taker_buy_quote', 'ignore'
-            ])
-            
-            df['close'] = pd.to_numeric(df['close'])
-            df['high'] = pd.to_numeric(df['high'])
-            df['low'] = pd.to_numeric(df['low'])
-            df['volume'] = pd.to_numeric(df['volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            
-            return df[['timestamp', 'open', 'high', 'low', 'close', 'volume']]
-            
-        except Exception as e:
-            print(f"Error fetching data for {coin}: {e}")
-            return None
-    
-    def _calculate_rsi(self, prices: pd.Series, period: int) -> pd.Series:
-        """Calculate RSI indicator"""
-        deltas = prices.diff()
-        gain = (deltas.where(deltas > 0, 0)).rolling(window=period).mean()
-        loss = (-deltas.where(deltas < 0, 0)).rolling(window=period).mean()
+    def _run_all_tests(self, selected_coins: List[str], signal_type: str, 
+                       minutes: int, position_size: float) -> List[Dict]:
+        """Run all backtest combinations"""
+        all_results = []
+        combinations = self._generate_combinations(signal_type)
+        total_tests = len(selected_coins) * len(combinations)
+        test_count = 0
         
-        rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
+        for coin in selected_coins:
+            self.parent.after(0, lambda c=coin: self.status_label.config(
+                text=f"Fetching data for {c}..."))
+            
+            df = fetch_historical_data(coin, minutes, self.current_interval)
+            
+            if df is None or len(df) < self._get_min_data_length(signal_type):
+                continue
+            
+            # Test all combinations for this coin
+            for combo in combinations:
+                test_count += 1
+                self.parent.after(0, lambda tc=test_count, tt=total_tests: self.status_label.config(
+                    text=f"Testing {tc}/{tt} configurations..."))
+                
+                result = self._run_strategy_backtest(df, coin, signal_type, combo, position_size)
+                if result:
+                    all_results.append(result)
         
-        return rsi
+        return all_results
     
-    def _calculate_sma(self, prices: pd.Series, period: int) -> pd.Series:
-        """Calculate Simple Moving Average"""
-        return prices.rolling(window=period).mean()
+    def _generate_combinations(self, signal_type: str) -> List:
+        """Generate parameter combinations based on signal type"""
+        if signal_type == "SMA 5min":
+            short = self.optimization_ranges.get('short_period', [5, 8, 10, 12, 15])
+            long = self.optimization_ranges.get('long_period', [20, 25, 30, 35, 40])
+            return list(itertools.product(short, long))
+        elif signal_type in ["Range 24h Low", "Range 7days Low"]:
+            offsets = self.optimization_ranges.get('long_offset', [-2.0, -1.5, -1.0, -0.5, 0.0])
+            tolerances = self.optimization_ranges.get('tolerance', [1.0, 1.5, 2.0, 2.5, 3.0])
+            return list(itertools.product(offsets, tolerances))
+        elif signal_type == "Scalping 1min":
+            fast = self.optimization_ranges.get('fast_ema', [3, 5, 8])
+            slow = self.optimization_ranges.get('slow_ema', [10, 13, 15, 20])
+            rsi_p = self.optimization_ranges.get('rsi_period', [5, 7, 9])
+            rsi_os = self.optimization_ranges.get('rsi_oversold', [25, 30, 35])
+            rsi_ob = self.optimization_ranges.get('rsi_overbought', [65, 70, 75])
+            vol = self.optimization_ranges.get('volume_multiplier', [1.3, 1.5, 1.8, 2.0])
+            return list(itertools.product(fast, slow, rsi_p, rsi_os, rsi_ob, vol))
+        elif signal_type == "MACD 15min":
+            fast = self.optimization_ranges.get('fast', [8, 10, 12, 14, 16])
+            slow = self.optimization_ranges.get('slow', [20, 23, 26, 29, 32])
+            signal = self.optimization_ranges.get('signal', [7, 8, 9, 10, 11])
+            return list(itertools.product(fast, slow, signal))
+        else:
+            # RSI signals
+            periods = self.optimization_ranges.get('period', [10, 12, 14, 16, 18, 20])
+            oversold = self.optimization_ranges.get('oversold', [25, 28, 30, 32, 35])
+            overbought = self.optimization_ranges.get('overbought', [65, 68, 70, 72, 75])
+            return list(itertools.product(periods, oversold, overbought))
     
-    def _run_range_backtest(self, df: pd.DataFrame, coin: str, long_offset: float,
-                           tolerance: float, position_size: float) -> Optional[Dict]:
-        """Run a single range-based backtest"""
-        try:
-            # Calculate period low and high
-            period_low = df['low'].min()
-            period_high = df['high'].max()
-            
-            # Calculate buy range based on offset and tolerance
-            buy_range_low = period_low * (1 + long_offset / 100)
-            buy_range_high = period_low * (1 + long_offset / 100 + tolerance / 100)
-            
-            # Generate signals based on price entering/exiting range
-            signals = []
-            in_range = False
-            
-            for i in range(len(df)):
-                current_price = df.iloc[i]['close']
-                
-                # Check if price enters buy range (BUY signal)
-                if not in_range and buy_range_low <= current_price <= buy_range_high:
-                    signals.append({
-                        'timestamp': df.iloc[i]['timestamp'],
-                        'price': current_price,
-                        'rsi': 0,  # Placeholder
-                        'action': 'BUY'
-                    })
-                    in_range = True
-                
-                # Check if price exits range above (SELL signal - take profit)
-                elif in_range and current_price > buy_range_high:
-                    signals.append({
-                        'timestamp': df.iloc[i]['timestamp'],
-                        'price': current_price,
-                        'rsi': 0,  # Placeholder
-                        'action': 'SELL'
-                    })
-                    in_range = False
-                
-                # Check if price exits range below (SELL signal - stop loss)
-                elif in_range and current_price < buy_range_low:
-                    signals.append({
-                        'timestamp': df.iloc[i]['timestamp'],
-                        'price': current_price,
-                        'rsi': 0,  # Placeholder
-                        'action': 'SELL'
-                    })
-                    in_range = False
-            
-            # Simulate trades
-            trades = self._simulate_trades(signals, position_size)
-            
-            if not trades:
-                return None
-            
-            # Calculate statistics
-            winning_trades = [t for t in trades if t['profit_usd'] > 0]
-            losing_trades = [t for t in trades if t['profit_usd'] <= 0]
-            
-            total_profit = sum(t['profit_usd'] for t in trades)
-            win_rate = (len(winning_trades) / len(trades)) * 100 if trades else 0
-            
-            # Return result with range-specific format (using 'period' for offset, 'oversold' for tolerance)
-            return {
-                'coin': coin,
-                'period': long_offset,  # Store as 'period' for compatibility
-                'oversold': tolerance,  # Store as 'oversold' for compatibility
-                'overbought': 0,  # Not used for range
-                'total_trades': len(trades),
-                'winning_trades': len(winning_trades),
-                'losing_trades': len(losing_trades),
-                'win_rate': win_rate,
-                'total_profit_usd': total_profit,
-                'avg_profit': total_profit / len(trades) if trades else 0,
-                'signals_generated': len(signals)
-            }
-            
-        except Exception as e:
-            print(f"Error in range backtest: {e}")
-            return None
+    def _run_strategy_backtest(self, df: pd.DataFrame, coin: str, signal_type: str,
+                               combo: tuple, position_size: float) -> Optional[Dict]:
+        """Run backtest for specific strategy and parameters"""
+        if signal_type == "SMA 5min":
+            return run_sma_backtest(df, coin, combo[0], combo[1], position_size)
+        elif signal_type in ["Range 24h Low", "Range 7days Low"]:
+            return run_range_backtest(df, coin, combo[0], combo[1], position_size)
+        elif signal_type == "Scalping 1min":
+            return run_scalping_backtest(df, coin, combo[0], combo[1], combo[2], 
+                                        combo[3], combo[4], combo[5], position_size)
+        elif signal_type == "MACD 15min":
+            return run_macd_backtest(df, coin, combo[0], combo[1], combo[2], position_size)
+        else:
+            # RSI signals
+            return run_rsi_backtest(df, coin, combo[0], combo[1], combo[2], position_size)
     
-    def _run_sma_backtest(self, df: pd.DataFrame, coin: str, short_period: int,
-                          long_period: int, position_size: float) -> Optional[Dict]:
-        """Run a single SMA crossover backtest"""
-        try:
-            # Calculate SMAs
-            df_copy = df.copy()
-            df_copy['short_sma'] = self._calculate_sma(df_copy['close'], short_period)
-            df_copy['long_sma'] = self._calculate_sma(df_copy['close'], long_period)
-            
-            # Generate signals based on SMA crossover
-            signals = []
-            for i in range(1, len(df_copy)):
-                if pd.isna(df_copy.iloc[i]['short_sma']) or pd.isna(df_copy.iloc[i]['long_sma']):
-                    continue
-                
-                curr_short = df_copy.iloc[i]['short_sma']
-                curr_long = df_copy.iloc[i]['long_sma']
-                prev_short = df_copy.iloc[i-1]['short_sma']
-                prev_long = df_copy.iloc[i-1]['long_sma']
-                
-                # Bullish crossover: short crosses above long
-                if prev_short <= prev_long and curr_short > curr_long:
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': 0,  # Placeholder for compatibility
-                        'action': 'BUY'
-                    })
-                # Bearish crossover: short crosses below long
-                elif prev_short >= prev_long and curr_short < curr_long:
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': 0,  # Placeholder for compatibility
-                        'action': 'SELL'
-                    })
-            
-            # Simulate trades
-            trades = self._simulate_trades(signals, position_size)
-            
-            if not trades:
-                return None
-            
-            # Calculate statistics
-            winning_trades = [t for t in trades if t['profit_usd'] > 0]
-            losing_trades = [t for t in trades if t['profit_usd'] <= 0]
-            
-            total_profit = sum(t['profit_usd'] for t in trades)
-            win_rate = (len(winning_trades) / len(trades)) * 100 if trades else 0
-            
-            # Return result with SMA-specific format (using 'period' for short, 'oversold' for long)
-            return {
-                'coin': coin,
-                'period': short_period,  # Store as 'period' for compatibility
-                'oversold': long_period,  # Store as 'oversold' for compatibility
-                'overbought': 0,  # Not used for SMA
-                'total_trades': len(trades),
-                'winning_trades': len(winning_trades),
-                'losing_trades': len(losing_trades),
-                'win_rate': win_rate,
-                'total_profit_usd': total_profit,
-                'avg_profit': total_profit / len(trades) if trades else 0,
-                'signals_generated': len(signals)
-            }
-            
-        except Exception as e:
-            print(f"Error in SMA backtest: {e}")
-            return None
+    def _get_min_data_length(self, signal_type: str) -> int:
+        """Get minimum data length required for signal type"""
+        if signal_type == "SMA 5min":
+            return max(self.optimization_ranges.get('long_period', [40]))
+        elif signal_type in ["Range 24h Low", "Range 7days Low"]:
+            return 50
+        else:
+            return max(self.optimization_ranges.get('period', [20]))
     
-    def _run_scalping_backtest(self, df: pd.DataFrame, coin: str, fast_ema: int,
-                               slow_ema: int, rsi_period: int, rsi_oversold: int,
-                               rsi_overbought: int, volume_multiplier: float,
-                               position_size: float) -> Optional[Dict]:
-        """Run a single scalping backtest"""
-        try:
-            df_copy = df.copy()
-            
-            # Calculate indicators
-            df_copy['fast_ema'] = df_copy['close'].ewm(span=fast_ema, adjust=False).mean()
-            df_copy['slow_ema'] = df_copy['close'].ewm(span=slow_ema, adjust=False).mean()
-            df_copy['rsi'] = self._calculate_rsi(df_copy['close'], rsi_period)
-            
-            # Calculate volume spike
-            df_copy['avg_volume'] = df_copy['volume'].rolling(window=20).mean()
-            df_copy['volume_spike'] = df_copy['volume'] > (df_copy['avg_volume'] * volume_multiplier)
-            
-            # Generate signals
-            signals = []
-            for i in range(1, len(df_copy)):
-                if pd.isna(df_copy.iloc[i]['fast_ema']) or pd.isna(df_copy.iloc[i]['rsi']):
-                    continue
-                
-                curr_fast = df_copy.iloc[i]['fast_ema']
-                curr_slow = df_copy.iloc[i]['slow_ema']
-                prev_fast = df_copy.iloc[i-1]['fast_ema']
-                prev_slow = df_copy.iloc[i-1]['slow_ema']
-                curr_rsi = df_copy.iloc[i]['rsi']
-                vol_spike = df_copy.iloc[i]['volume_spike']
-                
-                # Bullish crossover
-                if (prev_fast <= prev_slow and curr_fast > curr_slow and
-                    curr_rsi > rsi_oversold and curr_rsi < rsi_overbought and vol_spike):
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': curr_rsi,
-                        'action': 'BUY'
-                    })
-                
-                # Bearish crossover
-                elif (prev_fast >= prev_slow and curr_fast < curr_slow and
-                      curr_rsi < rsi_overbought and curr_rsi > rsi_oversold and vol_spike):
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': curr_rsi,
-                        'action': 'SELL'
-                    })
-            
-            # Simulate trades
-            trades = self._simulate_trades(signals, position_size)
-            
-            if not trades:
-                return None
-            
-            # Calculate statistics
-            winning_trades = [t for t in trades if t['profit_usd'] > 0]
-            losing_trades = [t for t in trades if t['profit_usd'] <= 0]
-            
-            total_profit = sum(t['profit_usd'] for t in trades)
-            win_rate = (len(winning_trades) / len(trades)) * 100 if trades else 0
-            
-            # Return result (using 'period' for fast_ema, 'oversold' for slow_ema, 'overbought' for rsi_period)
-            return {
-                'coin': coin,
-                'period': fast_ema,
-                'oversold': slow_ema,
-                'overbought': rsi_period,
-                'total_trades': len(trades),
-                'winning_trades': len(winning_trades),
-                'losing_trades': len(losing_trades),
-                'win_rate': win_rate,
-                'total_profit_usd': total_profit,
-                'avg_profit': total_profit / len(trades) if trades else 0,
-                'signals_generated': len(signals)
-            }
-            
-        except Exception as e:
-            print(f"Error in scalping backtest: {e}")
-            return None
-    
-    def _run_macd_backtest(self, df: pd.DataFrame, coin: str, fast: int,
-                           slow: int, signal_period: int, position_size: float) -> Optional[Dict]:
-        """Run a single MACD backtest"""
-        try:
-            df_copy = df.copy()
-            
-            # Calculate MACD
-            ema_fast = df_copy['close'].ewm(span=fast, adjust=False).mean()
-            ema_slow = df_copy['close'].ewm(span=slow, adjust=False).mean()
-            macd_line = ema_fast - ema_slow
-            signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
-            histogram = macd_line - signal_line
-            
-            # Generate signals based on histogram crossover
-            signals = []
-            for i in range(1, len(df_copy)):
-                if pd.isna(histogram.iloc[i]) or pd.isna(histogram.iloc[i-1]):
-                    continue
-                
-                curr_hist = histogram.iloc[i]
-                prev_hist = histogram.iloc[i-1]
-                
-                # Bullish crossover: histogram crosses above zero
-                if prev_hist <= 0 and curr_hist > 0:
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': 0,  # Placeholder for compatibility
-                        'action': 'BUY'
-                    })
-                # Bearish crossover: histogram crosses below zero
-                elif prev_hist >= 0 and curr_hist < 0:
-                    signals.append({
-                        'timestamp': df_copy.iloc[i]['timestamp'],
-                        'price': df_copy.iloc[i]['close'],
-                        'rsi': 0,  # Placeholder for compatibility
-                        'action': 'SELL'
-                    })
-            
-            # Simulate trades
-            trades = self._simulate_trades(signals, position_size)
-            
-            if not trades:
-                return None
-            
-            # Calculate statistics
-            winning_trades = [t for t in trades if t['profit_usd'] > 0]
-            losing_trades = [t for t in trades if t['profit_usd'] <= 0]
-            
-            total_profit = sum(t['profit_usd'] for t in trades)
-            win_rate = (len(winning_trades) / len(trades)) * 100 if trades else 0
-            
-            # Return result (using 'period' for fast, 'oversold' for slow, 'overbought' for signal)
-            return {
-                'coin': coin,
-                'period': fast,
-                'oversold': slow,
-                'overbought': signal_period,
-                'total_trades': len(trades),
-                'winning_trades': len(winning_trades),
-                'losing_trades': len(losing_trades),
-                'win_rate': win_rate,
-                'total_profit_usd': total_profit,
-                'avg_profit': total_profit / len(trades) if trades else 0,
-                'signals_generated': len(signals)
-            }
-            
-        except Exception as e:
-            print(f"Error in MACD backtest: {e}")
-            return None
-    
-    def _save_best_results(self, all_results: List[Dict], timerange: str, position_size: float):
-        """Save best results for each coin to results folder"""
-        try:
-            # Create results directory if it doesn't exist
-            results_dir = "results"
-            os.makedirs(results_dir, exist_ok=True)
-            
-            # Get current timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            # Group results by coin and get best for each
-            coins_best = {}
-            for result in all_results:
-                coin = result['coin']
-                if coin not in coins_best:
-                    coins_best[coin] = result
-            
-            # Get signal name for filename
-            signal_name_map = {
-                "RSI 1min": "rsi-1min",
-                "RSI 5min": "rsi-5min",
-                "RSI 1h": "rsi-1h",
-                "RSI 4h": "rsi-4h",
-                "SMA 5min": "sma-5min",
-                "Range 24h Low": "range-24h-low",
-                "Range 7days Low": "range-7days-low",
-                "Scalping 1min": "scalping-1min",
-                "MACD 15min": "macd-15min"
-            }
-            signal_name = signal_name_map.get(self.signal_var.get(), "rsi-1min")
-            
-            # Save each coin's best result
-            for coin, best_result in coins_best.items():
-                # Create filename: coin_signal_timestamp.json
-                filename = f"{coin}_{signal_name}_{timestamp}.json"
-                filepath = os.path.join(results_dir, filename)
-                
-                # Prepare data to save
-                save_data = {
-                    'coin': coin,
-                    'signal': signal_name,
-                    'timestamp': timestamp,
-                    'backtest_date': datetime.now().isoformat(),
-                    'timerange': timerange,
-                    'position_size_usd': position_size,
-                    'best_parameters': {
-                        'period': best_result['period'],
-                        'oversold': best_result['oversold'],
-                        'overbought': best_result['overbought']
-                    },
-                    'performance': {
-                        'total_profit_usd': best_result['total_profit_usd'],
-                        'total_trades': best_result['total_trades'],
-                        'winning_trades': best_result['winning_trades'],
-                        'losing_trades': best_result['losing_trades'],
-                        'win_rate': best_result['win_rate'],
-                        'avg_profit': best_result['avg_profit'],
-                        'signals_generated': best_result['signals_generated']
-                    }
-                }
-                
-                # Save to file
-                with open(filepath, 'w') as f:
-                    json.dump(save_data, f, indent=2)
-                
-                print(f"Saved best result for {coin} to {filepath}")
-            
-            print(f"Saved {len(coins_best)} coin configurations to {results_dir}/")
-            
-        except Exception as e:
-            print(f"Error saving results: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    def _simulate_trades(self, signals: List[Dict], position_size: float) -> List[Dict]:
-        """Simulate trades based on signals with USD position size"""
-        trades = []
-        position = None
-        
-        for signal in signals:
-            if signal['action'] == 'BUY' and position is None:
-                # Open long position
-                position = {
-                    'entry_time': signal['timestamp'],
-                    'entry_price': signal['price'],
-                    'entry_rsi': signal['rsi'],
-                    'size_usd': position_size
-                }
-            
-            elif signal['action'] == 'SELL' and position is not None:
-                # Close position
-                pnl_pct = ((signal['price'] - position['entry_price']) / position['entry_price']) * 100
-                profit_usd = (pnl_pct / 100) * position['size_usd']
-                
-                trades.append({
-                    'entry_time': position['entry_time'],
-                    'entry_price': position['entry_price'],
-                    'exit_time': signal['timestamp'],
-                    'exit_price': signal['price'],
-                    'pnl_pct': pnl_pct,
-                    'profit_usd': profit_usd
-                })
-                
-                position = None
-        
-        return trades
+    def _get_signal_filename(self, signal_type: str) -> str:
+        """Get filename-friendly signal name"""
+        signal_map = {
+            "RSI 1min": "rsi-1min",
+            "RSI 5min": "rsi-5min",
+            "RSI 1h": "rsi-1h",
+            "RSI 4h": "rsi-4h",
+            "SMA 5min": "sma-5min",
+            "Range 24h Low": "range-24h-low",
+            "Range 7days Low": "range-7days-low",
+            "Scalping 1min": "scalping-1min",
+            "MACD 15min": "macd-15min"
+        }
+        return signal_map.get(signal_type, "rsi-1min")
     
     def _display_optimization_results(self, results: List[Dict], timerange: str, position_size: float):
-        """Display optimization results - showing best configuration per coin"""
+        """Display optimization results"""
         # Clear previous results
         for widget in self.results_frame.winfo_children():
             widget.destroy()
@@ -1061,16 +507,8 @@ class BacktestPage:
                     font=('Courier', 10)).pack(pady=50)
             return
         
-        # Group results by coin and get best for each
-        coins_best = {}
-        for result in results:
-            coin = result['coin']
-            if coin not in coins_best or result['total_profit_usd'] > coins_best[coin]['total_profit_usd']:
-                coins_best[coin] = result
-        
-        # Convert to list and sort by profit
-        best_per_coin = list(coins_best.values())
-        best_per_coin.sort(key=lambda x: x['total_profit_usd'], reverse=True)
+        # Get best results per coin
+        best_per_coin = group_best_results_by_coin(results)
         
         # Header
         header = tk.Frame(self.results_frame, bg=self.colors['bg_dark'])
@@ -1080,94 +518,16 @@ class BacktestPage:
                 bg=self.colors['bg_dark'], fg=self.colors['white'],
                 font=('Courier', 11, 'bold')).pack()
         
-        # Best overall result highlight
-        best = best_per_coin[0]
-        best_frame = tk.Frame(self.results_frame, bg=self.colors['green'], relief=tk.SOLID, borderwidth=2)
-        best_frame.pack(fill=tk.X, padx=10, pady=10)
+        # Best overall highlight
+        create_best_overall_highlight(self.results_frame, best_per_coin[0], self.colors)
         
-        tk.Label(best_frame, text="🏆 BEST OVERALL CONFIGURATION", bg=self.colors['green'],
-                fg=self.colors['bg_dark'], font=('Courier', 10, 'bold')).pack(pady=5)
-        
-        best_info = tk.Frame(best_frame, bg=self.colors['bg_dark'])
-        best_info.pack(fill=tk.X, padx=5, pady=5)
-        
-        tk.Label(best_info, 
-                text=f"{best['coin']} | Period: {best['period']} | Oversold: {best['oversold']} | Overbought: {best['overbought']}",
-                bg=self.colors['bg_dark'], fg=self.colors['white'],
-                font=('Courier', 9, 'bold')).pack()
-        
-        tk.Label(best_info,
-                text=f"Profit: ${best['total_profit_usd']:.2f} | Win Rate: {best['win_rate']:.1f}% | Trades: {best['total_trades']}",
-                bg=self.colors['bg_dark'], fg=self.colors['green'],
-                font=('Courier', 9, 'bold')).pack()
-        
-        # Best configuration per coin
+        # Best per coin section
         tk.Label(self.results_frame, text=f"═══ BEST CONFIGURATION PER COIN ({len(best_per_coin)} coins) ═══",
                 bg=self.colors['bg_panel'], fg=self.colors['white'],
                 font=('Courier', 10, 'bold')).pack(pady=(20, 10))
         
-        # Results table header
-        header_row = tk.Frame(self.results_frame, bg=self.colors['bg_dark'])
-        header_row.pack(fill=tk.X, padx=10, pady=2)
+        # Results table
+        create_results_header(self.results_frame, self.colors)
         
-        tk.Label(header_row, text="Rank", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=5, anchor='w').pack(side=tk.LEFT, padx=2)
-        tk.Label(header_row, text="Coin", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=6, anchor='w').pack(side=tk.LEFT, padx=2)
-        tk.Label(header_row, text="Period", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=7, anchor='w').pack(side=tk.LEFT, padx=2)
-        tk.Label(header_row, text="OS", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=4, anchor='w').pack(side=tk.LEFT, padx=2)
-        tk.Label(header_row, text="OB", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=4, anchor='w').pack(side=tk.LEFT, padx=2)
-        tk.Label(header_row, text="Profit", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=10, anchor='e').pack(side=tk.LEFT, padx=2)
-        tk.Label(header_row, text="Win%", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=7, anchor='e').pack(side=tk.LEFT, padx=2)
-        tk.Label(header_row, text="Trades", bg=self.colors['bg_dark'], fg=self.colors['gray'],
-                font=('Courier', 8, 'bold'), width=7, anchor='e').pack(side=tk.LEFT, padx=2)
-        
-        # Display best result for each coin
         for i, result in enumerate(best_per_coin):
-            self._create_result_row(self.results_frame, result, i + 1)
-    
-    def _create_result_row(self, parent, result: Dict, rank: int):
-        """Create a result row"""
-        row = tk.Frame(parent, bg=self.colors['bg_dark'] if rank % 2 == 0 else self.colors['bg_panel'])
-        row.pack(fill=tk.X, padx=10, pady=1)
-        
-        # Rank
-        rank_color = self.colors['green'] if rank <= 3 else self.colors['white']
-        tk.Label(row, text=f"#{rank}", bg=row['bg'], fg=rank_color,
-                font=('Courier', 8, 'bold'), width=4, anchor='w').pack(side=tk.LEFT, padx=2)
-        
-        # Coin
-        tk.Label(row, text=result['coin'], bg=row['bg'], fg=self.colors['white'],
-                font=('Courier', 8), width=6, anchor='w').pack(side=tk.LEFT, padx=2)
-        
-        # Period
-        tk.Label(row, text=str(result['period']), bg=row['bg'], fg=self.colors['white'],
-                font=('Courier', 8), width=7, anchor='w').pack(side=tk.LEFT, padx=2)
-        
-        # Oversold
-        tk.Label(row, text=str(result['oversold']), bg=row['bg'], fg=self.colors['white'],
-                font=('Courier', 8), width=4, anchor='w').pack(side=tk.LEFT, padx=2)
-        
-        # Overbought
-        tk.Label(row, text=str(result['overbought']), bg=row['bg'], fg=self.colors['white'],
-                font=('Courier', 8), width=4, anchor='w').pack(side=tk.LEFT, padx=2)
-        
-        # Profit
-        profit_color = self.colors['green'] if result['total_profit_usd'] > 0 else self.colors['red']
-        profit_text = f"+${result['total_profit_usd']:.2f}" if result['total_profit_usd'] > 0 else f"${result['total_profit_usd']:.2f}"
-        tk.Label(row, text=profit_text, bg=row['bg'], fg=profit_color,
-                font=('Courier', 8, 'bold'), width=10, anchor='e').pack(side=tk.LEFT, padx=2)
-        
-        # Win rate
-        wr_color = self.colors['green'] if result['win_rate'] >= 50 else self.colors['red']
-        tk.Label(row, text=f"{result['win_rate']:.1f}%", bg=row['bg'], fg=wr_color,
-                font=('Courier', 8), width=7, anchor='e').pack(side=tk.LEFT, padx=2)
-        
-        # Trades
-        tk.Label(row, text=str(result['total_trades']), bg=row['bg'], fg=self.colors['white'],
-                font=('Courier', 8), width=7, anchor='e').pack(side=tk.LEFT, padx=2)
+            create_result_row(self.results_frame, result, i + 1, self.colors)
